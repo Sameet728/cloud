@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Profile</title>
+</head>
+<body>
+
+<h2>Profile</h2>
+
+<p>Username: <%= currentUser.username %></p>
+
+<form action="/profile/telegram" method="POST">
+  <input
+    type="text"
+    name="telegramId"
+    placeholder="Enter Telegram ID"
+    value="<%= currentUser.telegramId || '' %>"
+    required
+  />
+  <button type="submit">Save Telegram ID</button>
+</form>
+
+<br>
+<a href="/dashboard">Go to Dashboard</a>
+
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Telegram Cloud</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f5f6fa;
+    }
+
+    /* NAVBAR */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 24px;
+      background: #1f2937;
+      color: white;
+    }
+
+    .navbar a {
+      color: white;
+      text-decoration: none;
+      margin-left: 15px;
+    }
+
+    .container {
+      padding: 40px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .btn.secondary {
+      background: #374151;
+    }
+
+    /* MODAL */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      width: 350px;
+    }
+
+    .modal input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+    }
+
+    .close {
+      float: right;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+  <div>
+    <b>Telegram Cloud</b>
+  </div>
+
+  <div>
+    <% if (currentUser) { %>
+      <span>Hi, <%= currentUser.username %></span>
+      <a href="/dashboard">Dashboard</a>
+      <a href="#" onclick="openModal()">Telegram ID</a>
+      <a href="/logout">Logout</a>
+    <% } else { %>
+      <a href="/login">Login</a>
+      <a href="/signup">Signup</a>
+    <% } %>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="container">
+  <div class="card">
+    <h1>Telegram Bot Cloud ☁️</h1>
+
+    <p>
+      Store unlimited files, photos, and videos using your own Telegram account.
+      Your data stays on Telegram — we only provide a clean, organized interface.
+    </p>
+
+    <% if (!currentUser) { %>
+      <h3>Get Started</h3>
+      <p>1️⃣ Create an account</p>
+      <p>2️⃣ Login</p>
+      <p>3️⃣ Link your Telegram ID</p>
+
+      <a class="btn" href="/signup">Create Account</a>
+      <a class="btn secondary" href="/login">Login</a>
+
+    <% } else { %>
+
+      <% if (!currentUser.telegramId) { %>
+        <h3>Link your Telegram ID</h3>
+        <p>
+          Open the bot, type <b>/start</b>, copy your Telegram ID and add it here.
+        </p>
+
+        <button class="btn" onclick="openModal()">Add Telegram ID</button>
+
+      <% } else { %>
+        <h3>You're all set ✅</h3>
+        <p>Your Telegram ID is linked.</p>
+        <a class="btn" href="/dashboard">Go to Dashboard</a>
+      <% } %>
+
+      <p style="margin-top:20px">
+        <a href="https://t.me/sameet_cloud_bot" target="_blank">
+          👉 Open Telegram Bot
+        </a>
+      </p>
+
+    <% } %>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="telegramModal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">✖</span>
+
+    <h3>Update Telegram ID</h3>
+
+    <form action="/profile/telegram" method="POST">
+      <input
+        type="text"
+        name="telegramId"
+        placeholder="Enter Telegram ID"
+        value="<%= currentUser ? currentUser.telegramId || '' : '' %>"
+        required
+      />
+      <br><br>
+      <button class="btn" type="submit">Save</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openModal() {
+    document.getElementById("telegramModal").style.display = "flex";
+  }
+
+  function closeModal() {
+    document.getElementById("telegramModal").style.display = "none";
+  }
+</script>
+
+</body>
+</html>

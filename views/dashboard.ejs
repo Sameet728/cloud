@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Telegram Cloud</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    .section {
+      margin-bottom: 20px;
+    }
+
+    .item {
+      padding: 8px;
+      margin: 6px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: grab;
+      background: #fff;
+    }
+
+    .folder {
+      background: #f0f8ff;
+      font-weight: bold;
+    }
+
+    .file {
+      background: #ffffff;
+    }
+
+    .folder:hover {
+      background: #e3f2fd;
+    }
+
+    .item a {
+      text-decoration: none;
+      color: #0077cc;
+    }
+
+    .item button {
+      margin-left: 6px;
+    }
+
+    .drop-hint {
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <h2>
+    <a href="/dashboard">My Drive</a>
+
+    <% breadcrumb.forEach(folder=> { %>
+      / <a href="/dashboard/<%= folder._id %>">
+        <%= folder.name %>
+      </a>
+      <% }) %>
+  </h2>
+
+  <form action="/search" method="GET" style="margin:10px 0">
+    <input type="text" name="q" placeholder="Search files or folders..." required />
+    <button type="submit">Search</button>
+  </form>
+
+
+  <!-- CREATE FOLDER -->
+  <div class="section">
+    <form action="/folder/create" method="POST">
+      <input type="text" name="name" placeholder="New folder name" required />
+      <input type="hidden" name="parentFolderId" value="<%= currentFolder ? currentFolder._id : '' %>" />
+      <button type="submit">Create Folder</button>
+    </form>
+  </div>
+
+  <!-- BACK BUTTON -->
+  <% if (currentFolder) { %>
+    <div class="section">
+      <a href="/dashboard/<%= currentFolder.parentFolderId || '' %>">⬅ Back</a>
+    </div>
+    <% } %>
+      <!-- ROOT DROP ZONE -->
+      <div class="item folder" style="background:#e8f5e9" ondragover="allowDrop(event)" ondrop="dropToRoot(event)">
+        🏠 Root (Drop files here)
+      </div>
+
+
+      <!-- FOLDERS -->
+      <div class="section">
+        <h3>Folders</h3>
+
+        <% if (folders.length===0) { %>
+          <p>No folders</p>
+          <% } %>
+
+            <% folders.forEach(folder=> { %>
+              <div class="item folder" ondragover="allowDrop(event)" ondrop="dropFile(event)"
+                data-folder-id="<%= folder._id %>">
+                📁
+                <a href="/dashboard/<%= folder._id %>">
+                  <%= folder.name %>
+                </a>
+                <form action="/folder/<%= folder._id %>/delete-hard" method="POST" style="display:inline" onsubmit="return confirm(
+    '⚠️ WARNING: This will permanently delete this folder, all subfolders, and ALL files from Telegram. This cannot be undone. Continue?'
+  )">
+                  <button type="submit" style="color:red">🔥 Delete Folder</button>
+                </form>
+
+                <div class="drop-hint">Drop files here</div>
+              </div>
+              <% }) %>
+      </div>
+
+
+      <div class="section">
+        <button onclick="bulkDelete()">🗑 Delete Selected</button>
+
+        <select id="bulkFolderSelect">
+          <option value="">Move to Root</option>
+          <% folders.forEach(folder=> { %>
+            <option value="<%= folder._id %>">
+              <%= folder.name %>
+            </option>
+            <% }) %>
+        </select>
+
+        <button onclick="bulkMove()">📁 Move</button>
+      </div>
+
+
+      <!-- FILES -->
+      <form method="GET" action="/dashboard" style="margin-bottom:10px">
+        <select name="type" onchange="this.form.submit()">
+          <option value="">All Files</option>
+          <option value="photo">Images</option>
+          <option value="video">Videos</option>
+          <option value="document">Documents</option>
+        </select>
+      </form>
+
+      <!-- FILES -->
+      <div class="section">
+        <h3>Files</h3>
+
+        <% if (files.length===0) { %>
+          <p>No files</p>
+          <% } %>
+
+            <% files.forEach(file=> { %>
+              <div class="item file" draggable="true" ondragstart="dragFile(event)" data-file-id="<%= file._id %>">
+                <input type="checkbox" class="file-checkbox" value="<%= file._id %>" />
+
+                📄 <%= file.fileName %>
+
+                  |
+                  <% if ( file.mimeType==="application/pdf" || file.fileType==="video" || file.fileType==="photo" ) { %>
+                    | <a href="/preview/<%= file._id %>" target="_blank">Preview</a>
+                    <% } %>
+
+                      | <a href="/download/<%= file._id %>">Download</a>
+
+                      <form action="/file/<%= file._id %>/delete" method="POST" style="display:inline"
+                        onsubmit="return confirm('Delete this file permanently?')">
+                        <button type="submit">Delete</button>
+                      </form>
+              </div>
+              <% }) %>
+      </div>
+
+
+      <!-- bulk sleect logic -->
+      <script>
+        function getSelectedFiles() {
+          return Array.from(document.querySelectorAll(".file-checkbox:checked"))
+            .map(cb => cb.value);
+        }
+
+        async function bulkDelete() {
+          const ids = getSelectedFiles();
+          if (ids.length === 0) return alert("No files selected");
+
+          if (!confirm("Delete selected files permanently?")) return;
+
+          await fetch("/files/bulk-delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids })
+          });
+
+          location.reload();
+        }
+
+        async function bulkMove() {
+          const ids = getSelectedFiles();
+          const folderId = document.getElementById("bulkFolderSelect").value;
+
+          if (ids.length === 0) return alert("No files selected");
+
+          await fetch("/files/bulk-move", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids, folderId })
+          });
+
+          location.reload();
+        }
+      </script>
+
+
+
+      <!-- DRAG & DROP SCRIPT -->
+      <script>
+        let draggedFileId = null;
+
+        function dragFile(event) {
+          draggedFileId = event.currentTarget.dataset.fileId;
+        }
+
+        function allowDrop(event) {
+          event.preventDefault();
+        }
+
+        async function dropFile(event) {
+          event.preventDefault();
+
+          const folderId = event.currentTarget.dataset.folderId;
+
+          if (!draggedFileId || !folderId) return;
+
+          await fetch(`/file/${draggedFileId}/move`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ folderId })
+          });
+
+          location.reload();
+        }
+
+        async function dropToRoot(event) {
+          event.preventDefault();
+
+          if (!draggedFileId) return;
+
+          await fetch(`/file/${draggedFileId}/move`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ folderId: null })
+          });
+
+          location.reload();
+        }
+
+      </script>
+
+</body>
+
+</html>
