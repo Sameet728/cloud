@@ -21,7 +21,7 @@ router.post("/signup", async (req, res) => {
       email: req.body.email,
       username: username,
       password: hashedPassword, 
-      telegramId: req.body.telegramId || null
+      
     });
 
     res.redirect("/login");

@@ -153,21 +153,28 @@
   <div class="modal-content">
     <span class="close" onclick="closeModal()">✖</span>
 
-    <h3>Update Telegram ID</h3>
+    <h3>Verify Telegram Account</h3>
 
-    <form action="/profile/telegram" method="POST">
-      <input
-        type="text"
-        name="telegramId"
-        placeholder="Enter Telegram ID"
-        value="<%= currentUser ? currentUser.telegramId || '' : '' %>"
-        required
-      />
-      <br><br>
-      <button class="btn" type="submit">Save</button>
-    </form>
+    <% if (currentUser && !currentUser.telegramVerified) { %>
+      <p>
+        Click the button below to generate a verification code.
+        Then send that code to the Telegram bot.
+      </p>
+
+      <button
+        class="btn"
+        type="button"
+        onclick="startTelegramVerify()"
+      >
+        Verify Telegram
+      </button>
+
+    <% } else { %>
+      <p>✅ Your Telegram account is already verified.</p>
+    <% } %>
   </div>
 </div>
+
 
 <script>
   function openModal() {
@@ -178,6 +185,19 @@
     document.getElementById("telegramModal").style.display = "none";
   }
 </script>
+<script>
+async function startTelegramVerify() {
+  const res = await fetch("/telegram/request", { method: "POST" });
+  const data = await res.json();
+
+  alert(
+    "Send this code to the Telegram bot:\n\n" +
+    data.code +
+    "\n\nBot: https://t.me/sameet_cloud_bot"
+  );
+}
+</script>
+
 
 </body>
 </html>

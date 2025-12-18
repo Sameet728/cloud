@@ -8,6 +8,7 @@ const passport = require("passport");
 const isLoggedIn = require("./middleware/isLoggedIn");
 const Folder = require("./models/Folder");
 const File = require("./models/File");
+const crypto = require("crypto");
 
 
 const app = express();
@@ -147,6 +148,20 @@ app.get("/download/:id", isLoggedIn, async (req, res) => {
 
 
 
+/* =========================
+   REQUEST TELEGRAM VERIFY
+========================= */
+app.post("/telegram/request", isLoggedIn, async (req, res) => {
+  const code = "TG-" + crypto.randomBytes(3).toString("hex").toUpperCase();
+
+  req.user.telegramVerifyCode = code;
+  req.user.telegramVerified = false;
+  await req.user.save();
+
+  res.json({ code });
+});
+
+
 
 
 
@@ -216,6 +231,10 @@ app.get("/thumb/:id", async (req, res) => {
 
 // DASHBOARD (Passport + Folder system)
 app.get("/dashboard/:folderId?", isLoggedIn, async (req, res) => {
+
+    if (!req.user.telegramVerified) {
+    return res.redirect("/");
+  }
   // 🚨 If Telegram ID not linked, force profile page
   if (!req.user.telegramId) {
     return res.redirect("/profile");

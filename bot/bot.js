@@ -1,19 +1,49 @@
-const TelegramBot = require("node-telegram-bot-api");
-const User = require("../models/User");
 
+const TelegramBot = require("node-telegram-bot-api");
 const File = require("../models/File");
+const User = require("../models/User");
 
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
 bot.on("message", async (msg) => {
+  const telegramId = msg.from.id;
+  console.log("Received message from Telegram ID:", telegramId);
+
+  /* =========================
+     1️⃣ TELEGRAM VERIFICATION
+  ========================= */
+  if (msg.text) {
+    const text = msg.text.trim();
+
+    const user = await User.findOne({
+      telegramVerifyCode: text,
+      telegramVerified: false
+    });
+
+    if (user) {
+      user.telegramId = telegramId;
+      user.telegramVerified = true;
+      user.telegramVerifyCode = null;
+      await user.save();
+
+      return bot.sendMessage(
+        telegramId,
+        "✅ Telegram verified successfully!\nYou can now use Telegram Cloud."
+      );
+    }
+  }
+
+  /* =========================
+     2️⃣ FILE HANDLING
+  ========================= */
   if (!msg.document && !msg.photo && !msg.video) return;
 
   let fileId, thumbFileId = null, fileType, fileName, mimeType;
 
   if (msg.photo) {
     fileType = "photo";
-    thumbFileId = msg.photo[0].file_id; // smallest
-    fileId = msg.photo[msg.photo.length - 1].file_id; // largest
+    thumbFileId = msg.photo[0].file_id;
+    fileId = msg.photo[msg.photo.length - 1].file_id;
     fileName = "photo.jpg";
     mimeType = "image/jpeg";
   }
@@ -34,7 +64,7 @@ bot.on("message", async (msg) => {
   }
 
   await File.create({
-    telegramId: msg.from.id,
+    telegramId,
     messageId: msg.message_id,
     fileId,
     thumbFileId,
@@ -46,6 +76,7 @@ bot.on("message", async (msg) => {
 
   bot.sendMessage(msg.chat.id, "✅ File indexed.");
 });
+
 
 
 bot.onText(/\/start/, async (msg) => {

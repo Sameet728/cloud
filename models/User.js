@@ -17,6 +17,15 @@ const userSchema = new mongoose.Schema({
   telegramId: {
     type: Number,
     default: null
+  },
+   telegramVerified: {
+    type: Boolean,
+    default: false
+  },
+
+  telegramVerifyCode: {
+    type: String,
+    default: null
   }
 });
 
