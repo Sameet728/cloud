@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= rootFolder.name %> · CloudSpace
+    </title>
+
+    <link href="https://://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #3b82f6;
+            --accent-soft: #eff6ff;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-sub: #64748b;
+            --border: #e2e8f0;
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --shadow-card: 0 14px 35px rgba(15, 23, 42, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top, #e0f2fe, #f8fafc 52%);
+            color: var(--text-main);
+        }
+
+        .page-shell {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 16px 40px 16px;
+        }
+
+        /* Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .page-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .page-title-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 15px;
+            background: #0f172a;
+            color: #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.5);
+        }
+
+        .page-title-text h1 {
+            margin: 0;
+            font-size: 1.4rem;
+            letter-spacing: -0.03em;
+        }
+
+        .page-title-text span {
+            font-size: 0.82rem;
+            color: var(--text-sub);
+        }
+
+        .page-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 999px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            background: #e5e7eb;
+            color: var(--text-main);
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #0f172a;
+            color: #f9fafb;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.45);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:hover {
+            background: #020617;
+        }
+
+        /* Controls row */
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .search-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 220px;
+            max-width: 360px;
+        }
+
+        .search-wrap input {
+            width: 100%;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            padding: 8px 30px 8px 30px;
+            font-size: 0.86rem;
+            background: #f9fafb;
+        }
+
+        .search-wrap i {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.75rem;
+            color: var(--text-sub);
+        }
+
+        .filter-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .pill {
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            font-size: 0.78rem;
+            color: var(--text-sub);
+            background: white;
+            cursor: pointer;
+        }
+
+        .pill.active {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-color: #bfdbfe;
+            font-weight: 600;
+        }
+
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin: 20px 0 10px;
+        }
+
+        .section-heading h2 {
+            margin: 0;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-sub);
+        }
+
+        .section-heading span {
+            font-size: 0.78rem;
+            color: var(--text-sub);
+        }
+
+        /* Grids */
+        .folder-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 14px;
+        }
+
+        .folder-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 14px 14px 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-card);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            cursor: pointer;
+            transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .folder-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.2);
+            border-color: #bfdbfe;
+        }
+
+        .folder-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 12px;
+            background: #fef3c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #d97706;
+            flex-shrink: 0;
+        }
+
+        .folder-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .folder-hint {
+            font-size: 0.76rem;
+            color: var(--text-sub);
+        }
+
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 14px;
+        }
+
+        .file-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 14px 12px 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-card);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+        }
+
+        .file-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.2);
+            border-color: #bfdbfe;
+        }
+
+        .file-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 10px;
+            background: #eff6ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2563eb;
+            flex-shrink: 0;
+            font-size: 0.95rem;
+        }
+
+        .file-icon.photo {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        .file-icon.video {
+            background: #f5f3ff;
+            color: #8b5cf6;
+        }
+
+        .file-icon.pdf {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+        .file-icon.doc {
+            background: #ecfdf5;
+            color: #16a34a;
+        }
+
+        .file-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-meta {
+            font-size: 0.76rem;
+            color: var(--text-sub);
+        }
+
+        .file-actions {
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+        }
+
+        .file-actions button,
+        .file-actions a {
+            border: none;
+            background: none;
+            color: var(--accent);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-sub);
+            font-size: 0.9rem;
+        }
+
+        .empty-state i {
+            font-size: 2.4rem;
+            margin-bottom: 10px;
+            opacity: 0.4;
+        }
+
+        @media (max-width:640px) {
+            .page-header {
+                align-items: flex-start;
+            }
+
+            .page-actions {
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-shell">
+        <header class="page-header">
+            <div class="page-title">
+                <div class="page-title-icon">
+                    <i class="fas fa-folder-tree"></i>
+                </div>
+                <div class="page-title-text">
+                    <h1>
+                        <%= rootFolder.name %>
+                    </h1>
+                    <span>Browse folders and preview files inside this collection.</span>
+                </div>
+            </div>
+
+            <div class="page-actions">
+                <button class="btn" onclick="history.back()">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <a href="/dashboard" class="btn btn-primary">
+                    <i class="fas fa-table-columns"></i> Dashboard
+                </a>
+            </div>
+        </header>
+
+        <!-- Controls -->
+        <div class="controls-row">
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" id="fileSearch" placeholder="Search files in this folder..."
+                    oninput="applyFilters()" />
+            </div>
+            <div class="filter-pills">
+                <button type="button" class="pill active" data-type="all"
+                    onclick="setTypeFilter('all', this)">All</button>
+                <button type="button" class="pill" data-type="photo"
+                    onclick="setTypeFilter('photo', this)">Photos</button>
+                <button type="button" class="pill" data-type="video"
+                    onclick="setTypeFilter('video', this)">Videos</button>
+                <button type="button" class="pill" data-type="document"
+                    onclick="setTypeFilter('document', this)">Documents</button>
+            </div>
+        </div>
+
+        <!-- Folders -->
+        <section>
+            <div class="section-heading">
+                <h2>Folders</h2>
+                <span>
+                    <%= folders.length %> item(s)
+                </span>
+            </div>
+
+            <% if (folders.length===0) { %>
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <div>No subfolders yet.</div>
+                </div>
+                <% } else { %>
+                    <div class="folder-grid">
+                        <% folders.forEach(f=> { %>
+                            <a href="/dashboard/<%= f._id %>" class="folder-card">
+                                <div class="folder-icon">
+                                    <i class="fas fa-folder"></i>
+                                </div>
+                                <div>
+                                    <div class="folder-name">
+                                        <%= f.name %>
+                                    </div>
+                                    <div class="folder-hint">Open folder</div>
+                                </div>
+                            </a>
+                            <% }) %>
+                    </div>
+                    <% } %>
+        </section>
+
+        <!-- Files -->
+        <section>
+            <div class="section-heading">
+                <h2>Files</h2>
+                <span>
+                    <%= files.length %> item(s)
+                </span>
+            </div>
+
+            <% if (files.length===0) { %>
+                <div class="empty-state">
+                    <i class="fas fa-box-open"></i>
+                    <div>No files in this folder.</div>
+                </div>
+                <% } else { %>
+                    <div id="fileGrid" class="file-grid">
+                        <% files.forEach(file=> { %>
+                            <% let typeClass='' ; let iconClass='fa-file' ; if (file.mimeType==='application/pdf' ) {
+                                typeClass='pdf' ; iconClass='fa-file-pdf' ; } else if (file.fileType==='photo' ) {
+                                typeClass='photo' ; iconClass='fa-image' ; } else if (file.fileType==='video' ) {
+                                typeClass='video' ; iconClass='fa-play-circle' ; } else { typeClass='doc' ;
+                                iconClass='fa-file-lines' ; } %>
+                                <div class="file-card" data-name="<%= file.fileName.toLowerCase() %>"
+                                    data-type="<%= file.fileType || (file.mimeType === 'application/pdf' ? 'document' : 'other') %>">
+                                    <div class="file-top">
+                                        <div class="file-icon <%= typeClass %>">
+                                            <i class="fas <%= iconClass %>"></i>
+                                        </div>
+                                        <div class="file-name" title="<%= file.fileName %>">
+                                            <%= file.fileName %>
+                                        </div>
+                                    </div>
+                                    <div class="file-meta">
+                                        Uploaded: <%= file.createdAt ? file.createdAt.toDateString() : '—' %>
+                                    </div>
+                                    <div class="file-actions">
+                                        <button
+                                            onclick="window.open('/s/file/<%= file.share.token %>/preview','_blank')">
+                                            <i class="fas fa-eye"></i> Preview
+                                        </button>
+
+
+                                        <a href="/s/file/<%= file.share.token %>/download" target="_blank">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    </div>
+                                </div>
+                                <% }) %>
+                    </div>
+                    <% } %>
+        </section>
+    </div>
+
+    <script>
+        let currentTypeFilter = 'all';
+
+        function setTypeFilter(type, btn) {
+            currentTypeFilter = type;
+            document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const term = document.getElementById('fileSearch').value.trim().toLowerCase();
+            const cards = document.querySelectorAll('.file-card');
+
+            cards.forEach(card => {
+                const name = card.dataset.name || '';
+                const type = card.dataset.type || 'other';
+
+                const matchText = !term || name.includes(term);
+                const matchType = currentTypeFilter === 'all' ||
+                    (currentTypeFilter === 'document' && (type === 'document' || type === 'other')) ||
+                    type === currentTypeFilter;
+
+                card.style.display = (matchText && matchType) ? '' : 'none';
+            });
+        }
+
+        function previewFile(id, mime, type) {
+            if (mime === "application/pdf" || type === "video" || type === "photo") {
+                window.open(`/preview/${id}`, '_blank');
+            } else {
+                alert("Preview not available for this file type. Please download.");
+            }
+        }
+    </script>
+    <script>
+        function previewShared(token, mime, type) {
+            if (
+                mime === "application/pdf" ||
+                type === "photo" ||
+                type === "video"
+            ) {
+                window.open(`/s/file/${token}/preview`, "_blank");
+            } else {
+                alert("Preview not available for this file type. Please download.");
+            }
+        }
+    </script>
+
+</body>
+
+</html>

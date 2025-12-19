@@ -9,6 +9,24 @@ const isLoggedIn = require("./middleware/isLoggedIn");
 const Folder = require("./models/Folder");
 const File = require("./models/File");
 const crypto = require("crypto");
+const multer = require("multer");
+const fs = require("fs");
+const TelegramBot = require("node-telegram-bot-api");
+const os = require("os");
+const Busboy = require("busboy");
+const Share = require("./models/Share");
+const FolderShare = require("./models/FolderShare");
+
+
+
+const upload = multer({
+  dest: os.tmpdir(),
+  limits: {
+    fileSize: 2 * 1024 * 1024 * 1024
+  }
+});
+
+
 
 
 const app = express();
@@ -43,6 +61,22 @@ app.use((req, res, next) => {
   res.locals.currentUser = req.user;
   next();
 });
+
+
+async function getAllFilesInFolder(folderId, telegramId) {
+  const folders = await Folder.find({ parentFolderId: folderId, telegramId });
+  const files = await File.find({ folderId, telegramId });
+
+  let allFiles = [...files];
+
+  for (const f of folders) {
+    const nested = await getAllFilesInFolder(f._id, telegramId);
+    allFiles.push(...nested);
+  }
+
+  return allFiles;
+}
+
 
 
 
@@ -133,7 +167,21 @@ app.get("/download/:id", isLoggedIn, async (req, res) => {
   const filePath = tgRes.data.result.file_path;
   const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${filePath}`;
 
-  const stream = await axios.get(fileUrl, { responseType: "stream" });
+  const axiosInstance = axios.create({
+  timeout: 0,
+  maxContentLength: Infinity,
+  maxBodyLength: Infinity,
+  decompress: false,
+  headers: {
+    Connection: "keep-alive"
+  }
+});
+
+const stream = await axiosInstance.get(fileUrl, {
+  responseType: "stream"
+});
+
+
 
   const safeFileName = sanitizeFileName(file.fileName || "file");
 
@@ -223,7 +271,21 @@ app.get("/thumb/:id", async (req, res) => {
   const filePath = tgRes.data.result.file_path;
   const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${filePath}`;
 
-  const stream = await axios.get(fileUrl, { responseType: "stream" });
+  const axiosInstance = axios.create({
+  timeout: 0,
+  maxContentLength: Infinity,
+  maxBodyLength: Infinity,
+  decompress: false,
+  headers: {
+    Connection: "keep-alive"
+  }
+});
+
+const stream = await axiosInstance.get(fileUrl, {
+  responseType: "stream"
+});
+
+
 
   res.setHeader("Content-Type", "image/jpeg");
   stream.data.pipe(res);
@@ -273,11 +335,30 @@ app.get("/dashboard/:folderId?", isLoggedIn, async (req, res) => {
     ? await buildBreadcrumb(currentFolder)
     : [];
 
+    // 🔢 TOTAL FILE COUNT
+  const totalFiles = await File.countDocuments({ telegramId });
+
+  // 💾 TOTAL STORAGE USED
+  const stats = await File.aggregate([
+    { $match: { telegramId } },
+    {
+      $group: {
+        _id: null,
+        totalSize: { $sum: "$fileSize" }
+      }
+    }
+  ]);
+
+  const totalStorage = stats[0]?.totalSize || 0;
+  console.log("Total storage (bytes):", totalStorage);
+
   res.render("dashboard", {
     folders,
     files,
     currentFolder,
-    breadcrumb
+    breadcrumb,
+    totalFiles,
+    totalStorage
   });
 });
 
@@ -321,11 +402,8 @@ app.post("/file/:id/move", async (req, res) => {
 app.get("/search", isLoggedIn, async (req, res) => {
   if (!req.user.telegramId) return res.redirect("/");
 
-  const File = require("./models/File");
-  const Folder = require("./models/Folder");
-
-  const q = req.query.q || "";
   const telegramId = Number(req.user.telegramId);
+  const q = req.query.q || "";
 
   const files = await File.find({
     telegramId,
@@ -337,13 +415,25 @@ app.get("/search", isLoggedIn, async (req, res) => {
     name: { $regex: q, $options: "i" }
   });
 
+  const totalFiles = await File.countDocuments({ telegramId });
+
+  const stats = await File.aggregate([
+    { $match: { telegramId } },
+    { $group: { _id: null, totalSize: { $sum: "$fileSize" } } }
+  ]);
+
+  const totalStorage = stats[0]?.totalSize || 0;
+
   res.render("dashboard", {
     currentFolder: null,
     breadcrumb: [],
     files,
-    folders
+    folders,
+    totalFiles,
+    totalStorage
   });
 });
+
 
 
 app.get("/preview/:id", isLoggedIn, async (req, res) => {
@@ -372,7 +462,21 @@ app.get("/preview/:id", isLoggedIn, async (req, res) => {
 
   if (!range || file.fileType !== "video") {
     // Non-video or no range → normal preview
-    const stream = await axios.get(fileUrl, { responseType: "stream" });
+    const axiosInstance = axios.create({
+  timeout: 0,
+  maxContentLength: Infinity,
+  maxBodyLength: Infinity,
+  decompress: false,
+  headers: {
+    Connection: "keep-alive"
+  }
+});
+
+const stream = await axiosInstance.get(fileUrl, {
+  responseType: "stream"
+});
+
+
 
     res.setHeader("Content-Type", file.mimeType || "video/mp4");
     res.setHeader("Content-Disposition", "inline");
@@ -494,11 +598,480 @@ app.post("/folder/:id/delete-hard", async (req, res) => {
 
 
 
+app.post("/upload-stream", isLoggedIn, (req, res) => {
+  if (!req.user.telegramVerified) {
+    return res.status(403).send("Telegram not verified");
+  }
+
+  const telegramId = req.user.telegramId;
+  const bot = new TelegramBot(process.env.BOT_TOKEN);
+
+  const busboy = Busboy({ headers: req.headers });
+
+  let uploadPromise;
+  let currentFolderId = null;
+
+  let originalFileName = "";
+  let detectedMime = "";
+  let totalSize = 0;
+  let fileType = "document";
+
+  busboy.on("field", (name, value) => {
+    if (name === "folderId") {
+      currentFolderId = value || null;
+    }
+  });
+
+  busboy.on("file", (fieldname, file, info) => {
+    const { filename, mimeType } = info;
+
+    originalFileName = filename;
+    detectedMime = mimeType || "application/octet-stream";
+
+    // count size
+    file.on("data", chunk => {
+      totalSize += chunk.length;
+    });
+
+    // decide fileType BEFORE sending
+    if (detectedMime.startsWith("image/")) {
+      fileType = "photo";
+      uploadPromise = bot.sendPhoto(telegramId, file);
+    } 
+    else if (detectedMime.startsWith("video/")) {
+      fileType = "video";
+      uploadPromise = bot.sendVideo(telegramId, file);
+    } 
+    else {
+      fileType = "document";
+      uploadPromise = bot.sendDocument(
+        telegramId,
+        file,
+        {},
+        { filename: originalFileName }
+      );
+    }
+  });
+
+  busboy.on("finish", async () => {
+    try {
+      const message = await uploadPromise;
+
+      let fileId, thumbFileId = null;
+
+      if (fileType === "photo") {
+        thumbFileId = message.photo[0].file_id;
+        fileId = message.photo[message.photo.length - 1].file_id;
+      }
+      else if (fileType === "video") {
+        fileId = message.video.file_id;
+        thumbFileId = message.video.thumb?.file_id || null;
+      }
+      else {
+        fileId = message.document.file_id;
+      }
+
+      await File.create({
+        telegramId,
+        folderId: currentFolderId,
+        messageId: message.message_id,
+
+        fileId,
+        thumbFileId,
+
+        fileType,
+        fileName: originalFileName,   // ✅ FIXED
+        mimeType: detectedMime,        // ✅ FIXED
+        fileSize: totalSize,            // ✅ FIXED
+
+        date: new Date()
+      });
+
+      res.status(200).end();
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Upload failed");
+    }
+  });
+
+  req.pipe(busboy);
+});
+
+
+
+app.post("/file/:id/share", isLoggedIn, async (req, res) => {
+  const file = await File.findById(req.params.id);
+
+  if (!file || file.telegramId !== Number(req.user.telegramId)) {
+    return res.status(403).json({ error: "Access denied" });
+  }
+
+  let share = await Share.findOne({ fileId: file._id });
+
+  // 🔁 If already shared → just return existing link
+  if (share && share.isActive) {
+    return res.json({
+      link: `${req.protocol}://${req.get("host")}/s/${share.token}`,
+      active: true
+    });
+  }
+
+  // ♻️ If exists but disabled → re-enable
+  if (share && !share.isActive) {
+    share.isActive = true;
+    await share.save();
+
+    return res.json({
+      link: `${req.protocol}://${req.get("host")}/s/${share.token}`,
+      active: true
+    });
+  }
+
+  // 🆕 Create new share only if none exists
+  const token = crypto.randomBytes(16).toString("hex");
+
+  share = await Share.create({
+    fileId: file._id,
+    token
+  });
+
+  res.json({
+    link: `${req.protocol}://${req.get("host")}/s/${token}`,
+    active: true
+  });
+});
+
+app.post("/file/:id/unshare", isLoggedIn, async (req, res) => {
+  const Share = require("./models/Share");
+  const File = require("./models/File");
+
+  const file = await File.findById(req.params.id);
+
+  if (!file || file.telegramId !== Number(req.user.telegramId)) {
+    return res.status(403).json({ error: "Access denied" });
+  }
+
+  await Share.findOneAndUpdate(
+    { fileId: file._id },
+    { isActive: false }
+  );
+
+  res.json({ success: true });
+});
 
 
 
 
 
-app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+app.get("/s/:token", async (req, res) => {
+  const Share = require("./models/Share");
+  const File = require("./models/File");
+  const axios = require("axios");
+
+  const share = await Share.findOne({
+    token: req.params.token,
+    isActive: true
+  }).populate("fileId");
+
+  if (!share) return res.status(404).send("Invalid or expired link");
+
+  const file = share.fileId;
+
+  const tgRes = await axios.get(
+    `https://api.telegram.org/bot${process.env.BOT_TOKEN}/getFile?file_id=${file.fileId}`
+  );
+
+  const filePath = tgRes.data.result.file_path;
+  const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${filePath}`;
+
+  const axiosInstance = axios.create({
+  timeout: 0,
+  maxContentLength: Infinity,
+  maxBodyLength: Infinity,
+  decompress: false,
+  headers: {
+    Connection: "keep-alive"
+  }
+});
+
+const stream = await axiosInstance.get(fileUrl, {
+  responseType: "stream"
+});
+
+
+
+  res.setHeader("Content-Type", file.mimeType || "application/octet-stream");
+  res.setHeader(
+    "Content-Disposition",
+    file.fileType === "photo" || file.fileType === "video"
+      ? "inline"
+      : `attachment; filename="${file.fileName}"`
+  );
+
+  stream.data.pipe(res);
+});
+
+
+
+app.post("/share/:token/revoke", isLoggedIn, async (req, res) => {
+  const Share = require("./models/Share");
+
+  await Share.findOneAndUpdate(
+    { token: req.params.token },
+    { isActive: false }
+  );
+
+  res.json({ success: true });
+});
+
+app.post("/folder/:id/unshare", isLoggedIn, async (req, res) => {
+  const folder = await Folder.findById(req.params.id);
+
+  if (!folder || folder.telegramId !== Number(req.user.telegramId)) {
+    return res.status(403).json({ error: "Access denied" });
+  }
+
+  // Disable folder share
+  await FolderShare.findOneAndUpdate(
+    { folderId: folder._id },
+    { isActive: false }
+  );
+
+  // 🔥 DISABLE ALL FILE SHARES INSIDE
+  const files = await getAllFilesInFolder(folder._id, folder.telegramId);
+
+  await Share.updateMany(
+    { fileId: { $in: files.map(f => f._id) } },
+    { isActive: false }
+  );
+
+  res.json({ success: true });
+});
+
+
+
+
+
+
+app.post("/folder/:id/share", isLoggedIn, async (req, res) => {
+  const folder = await Folder.findById(req.params.id);
+
+  if (!folder || folder.telegramId !== Number(req.user.telegramId)) {
+    return res.status(403).json({ error: "Access denied" });
+  }
+
+  let folderShare = await FolderShare.findOne({ folderId: folder._id });
+
+  if (!folderShare) {
+    folderShare = await FolderShare.create({
+      folderId: folder._id,
+      token: crypto.randomBytes(16).toString("hex"),
+      isActive: true
+    });
+  } else {
+    folderShare.isActive = true;
+    await folderShare.save();
+  }
+
+  // 🔥 SHARE ALL FILES INSIDE FOLDER
+  const files = await getAllFilesInFolder(folder._id, folder.telegramId);
+
+  for (const file of files) {
+    let fileShare = await Share.findOne({ fileId: file._id });
+
+    if (!fileShare) {
+      await Share.create({
+        fileId: file._id,
+        token: crypto.randomBytes(16).toString("hex"),
+        isActive: true
+      });
+    } else {
+      fileShare.isActive = true;
+      await fileShare.save();
+    }
+  }
+
+  res.json({
+    link: `${req.protocol}://${req.get("host")}/sf/${folderShare.token}`
+  });
+});
+
+
+
+app.get("/sf/:token", async (req, res) => {
+  const FolderShare = require("./models/FolderShare");
+  const Folder = require("./models/Folder");
+  const File = require("./models/File");
+  const Share = require("./models/Share");
+  const crypto = require("crypto");
+
+  const share = await FolderShare.findOne({
+    token: req.params.token,
+    isActive: true
+  });
+
+  if (!share) {
+    return res.status(404).send("❌ Link expired or disabled");
+  }
+
+  const folder = await Folder.findById(share.folderId);
+  if (!folder) return res.status(404).send("Folder not found");
+
+  const telegramId = folder.telegramId;
+
+  // 🔁 Recursive collector (SAFE)
+  async function collect(folderId) {
+    const folders = await Folder.find({
+      parentFolderId: folderId,
+      telegramId
+    });
+
+    const files = await File.find({
+      folderId,
+      telegramId
+    });
+
+    let allFolders = [...folders];
+    let allFiles = [...files];
+
+    for (const f of folders) {
+      const nested = await collect(f._id);
+      allFolders.push(...nested.folders);
+      allFiles.push(...nested.files);
+    }
+
+    return { folders: allFolders, files: allFiles };
+  }
+
+  const data = await collect(folder._id);
+
+  // 🔑 Ensure every file has a share token (SAFE OBJECTS)
+  const filesWithShare = [];
+
+  for (const file of data.files) {
+    let fileShare = await Share.findOne({ fileId: file._id ,isActive: true});
+
+    if (!fileShare) {
+      continue;
+    }
+
+    filesWithShare.push({
+      ...file.toObject(),
+      share: {
+        token: fileShare.token
+      }
+    });
+  }
+
+  res.render("shared/folder", {
+    rootFolder: folder,
+    folders: data.folders,
+    files: filesWithShare
+  });
+});
+
+
+
+
+app.get("/s/file/:token/preview", async (req, res) => {
+  const Share = require("./models/Share");
+  const axios = require("axios");
+
+  const share = await Share.findOne({
+    token: req.params.token,
+    isActive: true
+  }).populate("fileId");
+
+  if (!share) return res.status(404).send("Invalid link");
+
+  const file = share.fileId;
+
+  const range = req.headers.range;
+
+  // Get Telegram file path
+  const tgRes = await axios.get(
+    `https://api.telegram.org/bot${process.env.BOT_TOKEN}/getFile?file_id=${file.fileId}`
+  );
+
+  const filePath = tgRes.data.result.file_path;
+  const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${filePath}`;
+
+  // 🔹 NON-VIDEO OR NO RANGE → NORMAL STREAM
+  if (!range || file.fileType !== "video") {
+    const stream = await axios.get(fileUrl, {
+      responseType: "stream"
+    });
+
+    res.setHeader("Content-Type", file.mimeType || "application/octet-stream");
+    res.setHeader("Content-Disposition", "inline");
+
+    return stream.data.pipe(res);
+  }
+
+  // 🔹 VIDEO WITH RANGE SUPPORT
+  const telegramRes = await axios.get(fileUrl, {
+    responseType: "stream",
+    headers: {
+      Range: range
+    }
+  });
+
+  res.status(206);
+  res.setHeader("Content-Type", file.mimeType || "video/mp4");
+  res.setHeader("Content-Disposition", "inline");
+  res.setHeader("Accept-Ranges", "bytes");
+
+  if (telegramRes.headers["content-range"]) {
+    res.setHeader("Content-Range", telegramRes.headers["content-range"]);
+  }
+
+  if (telegramRes.headers["content-length"]) {
+    res.setHeader("Content-Length", telegramRes.headers["content-length"]);
+  }
+
+  telegramRes.data.pipe(res);
+});
+
+
+
+app.get("/s/file/:token/download", async (req, res) => {
+  const share = await Share.findOne({
+    token: req.params.token,
+    isActive: true
+  }).populate("fileId");
+
+  if (!share) return res.status(404).send("Invalid link");
+
+  const file = share.fileId;
+
+  const tgRes = await axios.get(
+    `https://api.telegram.org/bot${process.env.BOT_TOKEN}/getFile?file_id=${file.fileId}`
+  );
+
+  const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${tgRes.data.result.file_path}`;
+
+  const stream = await axios.get(fileUrl, { responseType: "stream" });
+
+  res.setHeader("Content-Type", "application/octet-stream");
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="${file.fileName}"`
+  );
+
+  stream.data.pipe(res);
+});
+
+
+
+
+
+
+
+
+
+
+
+
+app.listen(4000, () => {
+  console.log("Server running on http://localhost:4000");
 });

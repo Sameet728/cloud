@@ -1,203 +1,718 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-  <title>Telegram Cloud</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudSpace · Telegram Cloud</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f5f6fa;
+    :root {
+      /* Palette */
+      --primary: #0f172a;
+      --primary-hover: #1e293b;
+      --accent: #3b82f6;
+      --accent-light: #eff6ff;
+      --text-main: #1e293b;
+      --text-sub: #64748b;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --bg-body: #f8fafc;
+      --surface: #ffffff;
+
+      /* Spacing */
+      --container-width: 1200px;
+      --header-height: 80px;
+      
+      /* Shadows */
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      --shadow-glow: 0 0 40px -10px rgba(59, 130, 246, 0.15);
     }
 
-    /* NAVBAR */
-    .navbar {
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-body);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a { text-decoration: none; color: inherit; transition: 0.2s; }
+    ul { list-style: none; padding: 0; margin: 0; }
+
+    /* --- NAVIGATION --- */
+    .nav-wrapper {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-container {
+      max-width: var(--container-width);
+      margin: 0 auto;
+      height: var(--header-height);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--primary);
+      letter-spacing: -0.02em;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    }
+
+    .nav-links-desktop {
+      display: none;
+      align-items: center;
+      gap: 32px;
+    }
+
+    @media (min-width: 768px) {
+      .nav-links-desktop { display: flex; }
+    }
+
+    .nav-link {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text-sub);
+    }
+
+    .nav-link:hover { color: var(--primary); }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .btn-nav {
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .btn-login { color: var(--text-main); }
+    .btn-login:hover { color: var(--accent); }
+
+    .btn-signup {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
+    }
+    .btn-signup:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+    .mobile-menu-btn {
+      display: block;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+    @media (min-width: 768px) { .mobile-menu-btn { display: none; } }
+
+    /* Mobile Menu Panel */
+    .mobile-panel {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 20px;
+      box-shadow: var(--shadow-lg);
+    }
+    .mobile-panel.show { display: block; animation: slideDown 0.2s ease-out; }
+    .mobile-link { display: block; padding: 12px 0; font-weight: 600; color: var(--text-sub); border-bottom: 1px solid #f1f5f9; }
+    .mobile-link:last-child { border-bottom: none; }
+
+    /* --- HERO SECTION --- */
+    .hero-section {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 60px 24px 100px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-container {
+      max-width: var(--container-width);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    @media (min-width: 992px) {
+      .hero-container {
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 80px;
+      }
+    }
+
+    /* Hero Text Side */
+    .hero-content {
+      max-width: 600px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .hero-badge i { color: var(--accent); }
+
+    .hero-title {
+      font-size: 2.75rem;
+      line-height: 1.1;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 0 0 24px 0;
+      letter-spacing: -0.03em;
+    }
+
+    @media (min-width: 768px) {
+      .hero-title { font-size: 3.5rem; }
+    }
+
+    .hero-subtitle {
+      font-size: 1.125rem;
+      color: var(--text-sub);
+      margin-bottom: 40px;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    .btn-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+
+    .btn-hero-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.3);
+    }
+    .btn-hero-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+    .btn-hero-outline {
+      background: white;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-hero-outline:hover { border-color: var(--text-sub); transform: translateY(-2px); }
+
+    /* Features List (Steps) */
+    .features-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      font-weight: 500;
+    }
+
+    .feature-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Hero Card Side */
+    .hero-visual {
+      position: relative;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app-card {
+      background: white;
+      border-radius: 24px;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: var(--shadow-lg), var(--shadow-glow);
+      padding: 32px;
+      width: 100%;
+      max-width: 440px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 14px 24px;
-      background: #1f2937;
-      color: white;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
     }
 
-    .navbar a {
-      color: white;
-      text-decoration: none;
-      margin-left: 15px;
-    }
-
-    .container {
-      padding: 40px;
-      max-width: 900px;
-      margin: auto;
-    }
-
-    .card {
-      background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-
-    .btn {
-      padding: 10px 18px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-
-    .btn.secondary {
-      background: #374151;
-    }
-
-    /* MODAL */
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      justify-content: center;
+    .card-label {
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
       align-items: center;
+      gap: 10px;
     }
 
-    .modal-content {
+    .card-status {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      background: #f0fdf4;
+      color: #16a34a;
+      border-radius: 20px;
+      border: 1px solid #bbf7d0;
+    }
+    
+    .card-status.warn {
+      background: #fffbeb;
+      color: #b45309;
+      border-color: #fde68a;
+    }
+
+    .status-box {
+      background: var(--bg-body);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .status-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .status-row:last-child { margin-bottom: 0; }
+
+    .status-icon {
+      margin-top: 2px;
+      color: var(--accent);
+    }
+
+    .status-text h4 { margin: 0 0 4px 0; font-size: 0.95rem; }
+    .status-text p { margin: 0; font-size: 0.85rem; color: var(--text-sub); }
+
+    .bot-link-box {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.9rem;
+      color: var(--text-sub);
+    }
+    .bot-link-box a { color: var(--accent); font-weight: 600; }
+
+    /* --- FOOTER --- */
+    footer {
+      border-top: 1px solid var(--border);
       background: white;
-      padding: 25px;
-      border-radius: 8px;
-      width: 350px;
+      padding: 30px 24px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
     }
 
-    .modal input {
+    /* --- MODALS --- */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,0.6);
+      backdrop-filter: blur(4px); z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: 0.2s;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    
+    .modal-box {
+      background: white; width: 90%; max-width: 420px;
+      border-radius: 24px; padding: 32px;
+      box-shadow: var(--shadow-lg);
+      transform: scale(0.95); transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-overlay.active .modal-box { transform: scale(1); }
+
+    .modal-title { font-size: 1.25rem; font-weight: 700; margin: 0 0 16px 0; display:flex; justify-content:space-between; align-items:center; }
+    .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-sub); }
+    
+    /* Code Display Box */
+    .code-display-area {
+      background: #f1f5f9;
+      border: 2px dashed #94a3b8;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin: 20px 0;
+    }
+    
+    .code-text {
+      font-family: monospace;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 2px;
+    }
+
+    .btn-full {
       width: 100%;
-      padding: 10px;
-      margin-top: 10px;
+      justify-content: center;
+      margin-top: 12px;
     }
 
-    .close {
-      float: right;
-      cursor: pointer;
-      font-weight: bold;
+    /* Animations */
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 30px; right: 30px;
+      background: #1e293b; color: white;
+      padding: 12px 24px; border-radius: 50px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      display: flex; align-items: center; gap: 12px;
+      font-size: 0.9rem; z-index: 300;
+      opacity: 0; transform: translateY(20px); transition: 0.3s; pointer-events: none;
     }
+    .toast.active { opacity: 1; transform: translateY(0); }
+    .toast.error { background: #ef4444; }
   </style>
 </head>
 
 <body>
 
-<!-- NAVBAR -->
-<div class="navbar">
-  <div>
-    <b>Telegram Cloud</b>
-  </div>
+  <header class="nav-wrapper">
+    <div class="nav-container">
+      <a href="/" class="brand">
+        <div class="brand-icon"><i class="fas fa-cloud"></i></div>
+        CloudSpace
+      </a>
 
-  <div>
-    <% if (currentUser) { %>
-      <span>Hi, <%= currentUser.username %></span>
-      <a href="/dashboard">Dashboard</a>
-      <a href="#" onclick="openModal()">Telegram ID</a>
-      <a href="/logout">Logout</a>
-    <% } else { %>
-      <a href="/login">Login</a>
-      <a href="/signup">Signup</a>
-    <% } %>
-  </div>
-</div>
+      <nav class="nav-links-desktop">
+        <% if (currentUser) { %>
+          <a href="/dashboard" class="nav-link">Dashboard</a>
+          <a href="#" onclick="openModal('telegramModal')" class="nav-link">Verify Telegram</a>
+          
+          <div style="display:flex; align-items:center; gap:16px; margin-left:16px;">
+            <div style="text-align:right; line-height:1.2;">
+              <div style="font-weight:700; font-size:0.9rem;"><%= currentUser.username %></div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">Free Plan</div>
+            </div>
+            <a href="/logout" class="btn-nav btn-login" style="border:1px solid var(--border); padding:8px 16px;">Logout</a>
+          </div>
+        <% } else { %>
+          <a href="/login" class="btn-nav btn-login">Log In</a>
+          <a href="/signup" class="btn-nav btn-signup">Get Started</a>
+        <% } %>
+      </nav>
 
-<!-- CONTENT -->
-<div class="container">
-  <div class="card">
-    <h1>Telegram Bot Cloud ☁️</h1>
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
 
-    <p>
-      Store unlimited files, photos, and videos using your own Telegram account.
-      Your data stays on Telegram — we only provide a clean, organized interface.
-    </p>
+    <div class="mobile-panel" id="mobilePanel">
+      <% if (currentUser) { %>
+        <div style="padding-bottom:12px; margin-bottom:12px; border-bottom:1px solid var(--border);">
+          <strong>Hi, <%= currentUser.username %></strong>
+        </div>
+        <a href="/dashboard" class="mobile-link">Go to Dashboard</a>
+        <a href="#" onclick="openModal('telegramModal')" class="mobile-link">Verify Telegram</a>
+        <a href="/logout" class="mobile-link" style="color:var(--danger);">Logout</a>
+      <% } else { %>
+        <a href="/login" class="mobile-link">Log In</a>
+        <a href="/signup" class="mobile-link" style="color:var(--accent);">Sign Up Free</a>
+      <% } %>
+    </div>
+  </header>
 
-    <% if (!currentUser) { %>
-      <h3>Get Started</h3>
-      <p>1️⃣ Create an account</p>
-      <p>2️⃣ Login</p>
-      <p>3️⃣ Link your Telegram ID</p>
-
-      <a class="btn" href="/signup">Create Account</a>
-      <a class="btn secondary" href="/login">Login</a>
-
-    <% } else { %>
-
-      <% if (!currentUser.telegramId) { %>
-        <h3>Link your Telegram ID</h3>
-        <p>
-          Open the bot, type <b>/start</b>, copy your Telegram ID and add it here.
+  <section class="hero-section">
+    <div class="hero-container">
+      
+      <div class="hero-content">
+        <div class="hero-badge">
+          <i class="fas fa-bolt"></i> Powered by Telegram Cloud API
+        </div>
+        
+        <h1 class="hero-title">Unlimited cloud storage, simplified.</h1>
+        <p class="hero-subtitle">
+          Securely store, organize, and share your files using your Telegram account as the backend. No limits, private, and accessible from anywhere.
         </p>
 
-        <button class="btn" onclick="openModal()">Add Telegram ID</button>
+        <% if (!currentUser) { %>
+          <div class="hero-actions">
+            <a href="/signup" class="btn-hero btn-hero-primary">Create Free Account <i class="fas fa-arrow-right"></i></a>
+            <a href="https://t.me/sameet_cloud_bot" target="_blank" class="btn-hero btn-hero-outline"><i class="fab fa-telegram"></i> Bot</a>
+          </div>
+          
+          <div class="features-list">
+            <div class="feature-item">
+              <div class="feature-icon"><i class="fas fa-check"></i></div>
+              <span>Free unlimited storage via Telegram</span>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon"><i class="fas fa-check"></i></div>
+              <span>Clean, modern web dashboard</span>
+            </div>
+          </div>
 
-      <% } else { %>
-        <h3>You're all set ✅</h3>
-        <p>Your Telegram ID is linked.</p>
-        <a class="btn" href="/dashboard">Go to Dashboard</a>
-      <% } %>
+        <% } else { %>
+          <div class="hero-actions">
+            <a href="/dashboard" class="btn-hero btn-hero-primary"><i class="fas fa-table-columns"></i> Go to Dashboard</a>
+            <% if(!currentUser.telegramVerified) { %>
+              <button onclick="openModal('telegramModal')" class="btn-hero btn-hero-outline"><i class="fas fa-key"></i> Verify Telegram</button>
+            <% } %>
+          </div>
+          
+          <div class="features-list">
+            <div class="feature-item">
+              <div class="feature-icon"><i class="fas fa-user-check"></i></div>
+              <span>Logged in as <strong><%= currentUser.username %></strong></span>
+            </div>
+          </div>
+        <% } %>
+      </div>
 
-      <p style="margin-top:20px">
-        <a href="https://t.me/sameet_cloud_bot" target="_blank">
-          👉 Open Telegram Bot
+      <div class="hero-visual">
+        <div class="app-card">
+          <div class="card-header">
+            <div class="card-label">
+              <i class="fab fa-telegram" style="color:#3b82f6; font-size:1.5rem;"></i> Connection Status
+            </div>
+            <% if(currentUser && currentUser.telegramVerified) { %>
+              <div class="card-status"><i class="fas fa-circle"></i> Active</div>
+            <% } else { %>
+              <div class="card-status warn"><i class="fas fa-circle"></i> Pending</div>
+            <% } %>
+          </div>
+
+          <div class="status-box">
+            <div class="status-row">
+              <div class="status-icon"><i class="fas fa-shield-halved"></i></div>
+              <div class="status-text">
+                <h4>Private & Secure</h4>
+                <p>Files are stored in your personal Telegram "Saved Messages" cloud.</p>
+              </div>
+            </div>
+            <div class="status-row" style="margin-top:24px;">
+              <div class="status-icon"><i class="fas fa-infinity"></i></div>
+              <div class="status-text">
+                <h4>No Storage Limits</h4>
+                <p>Upload as much as Telegram allows (2GB per file).</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bot-link-box">
+            Bot Link: <a href="https://t.me/sameet_cloud_bot" target="_blank">@sameet_cloud_bot</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    <div style="max-width: var(--container-width); margin: 0 auto;">
+      &copy; <%= new Date().getFullYear() %> CloudSpace. Not affiliated with Telegram.
+    </div>
+  </footer>
+
+  <div id="telegramModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span>Connect Telegram</span>
+        <button class="close-btn" onclick="closeModal('telegramModal')">&times;</button>
+      </div>
+      
+      <div style="text-align:center; padding: 10px 0;">
+        <div style="width:60px; height:60px; background:#eff6ff; color:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem; margin:0 auto 20px;">
+          <i class="fab fa-telegram-plane"></i>
+        </div>
+        
+        <p style="color:var(--text-sub); margin-bottom:24px;">
+          To upload files, you need to verify your Telegram account. Click below to generate a code, then send it to the bot.
+        </p>
+
+        <button onclick="generateCode()" class="btn-hero btn-hero-primary btn-full">
+          Generate Code
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="codeModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span>Verification Code</span>
+        <button class="close-btn" onclick="closeModal('codeModal')">&times;</button>
+      </div>
+      
+      <div style="text-align:center;">
+        <p style="color:var(--text-sub); margin-bottom:12px;">Send this code to the Telegram bot:</p>
+        
+        <div class="code-display-area">
+          <span id="generatedCodeDisplay" class="code-text">LOADING...</span>
+        </div>
+
+        <button onclick="copyCode()" class="btn-hero btn-hero-primary btn-full">
+          <i class="fas fa-copy"></i> Copy Code
+        </button>
+        
+        <a href="https://t.me/sameet_cloud_bot" target="_blank" class="btn-hero btn-hero-outline btn-full" style="justify-content:center;">
+          <i class="fab fa-telegram"></i> Open Bot
         </a>
-      </p>
-
-    <% } %>
+      </div>
+    </div>
   </div>
-</div>
 
-<!-- MODAL -->
-<div class="modal" id="telegramModal">
-  <div class="modal-content">
-    <span class="close" onclick="closeModal()">✖</span>
-
-    <h3>Verify Telegram Account</h3>
-
-    <% if (currentUser && !currentUser.telegramVerified) { %>
-      <p>
-        Click the button below to generate a verification code.
-        Then send that code to the Telegram bot.
-      </p>
-
-      <button
-        class="btn"
-        type="button"
-        onclick="startTelegramVerify()"
-      >
-        Verify Telegram
-      </button>
-
-    <% } else { %>
-      <p>✅ Your Telegram account is already verified.</p>
-    <% } %>
+  <div id="toast" class="toast">
+    <i class="fas fa-info-circle" id="toastIcon"></i>
+    <span id="toastMsg">Notification</span>
   </div>
-</div>
 
+  <script>
+    /* UI Logic */
+    function toggleMobileMenu() {
+      document.getElementById('mobilePanel').classList.toggle('show');
+    }
 
-<script>
-  function openModal() {
-    document.getElementById("telegramModal").style.display = "flex";
-  }
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
 
-  function closeModal() {
-    document.getElementById("telegramModal").style.display = "none";
-  }
-</script>
-<script>
-async function startTelegramVerify() {
-  const res = await fetch("/telegram/request", { method: "POST" });
-  const data = await res.json();
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
 
-  alert(
-    "Send this code to the Telegram bot:\n\n" +
-    data.code +
-    "\n\nBot: https://t.me/sameet_cloud_bot"
-  );
-}
-</script>
+    /* Toast Logic */
+    function showToast(msg, type='success') {
+      const t = document.getElementById('toast');
+      const m = document.getElementById('toastMsg');
+      const i = document.getElementById('toastIcon');
+      
+      m.innerText = msg;
+      
+      if(type==='error') {
+        t.classList.add('error');
+        i.className = 'fas fa-exclamation-circle';
+      } else {
+        t.classList.remove('error');
+        i.className = 'fas fa-check-circle';
+      }
+      
+      t.classList.add('active');
+      setTimeout(() => t.classList.remove('active'), 3000);
+    }
 
+    /* Backend Calls */
+    async function generateCode() {
+      // 1. Close the intro modal
+      closeModal('telegramModal');
+      
+      // 2. Show toast indicating loading (optional but nice)
+      showToast('Generating code...', 'success');
+
+      try {
+        const res = await fetch('/telegram/request', { method: 'POST' });
+        const data = await res.json();
+        
+        if(data.code) {
+          // 3. Populate and open the result modal
+          document.getElementById('generatedCodeDisplay').innerText = data.code;
+          openModal('codeModal');
+        } else {
+          showToast('Could not generate code', 'error');
+        }
+      } catch(e) {
+        showToast('Error connecting to server', 'error');
+      }
+    }
+
+    function copyCode() {
+      const code = document.getElementById('generatedCodeDisplay').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('Code copied to clipboard!', 'success');
+      }).catch(err => {
+        showToast('Failed to copy', 'error');
+      });
+    }
+
+    // Flash messages from server if any
+    <% if (typeof flashSuccess !== 'undefined' && flashSuccess) { %>
+      showToast("<%= flashSuccess %>", 'success');
+    <% } %>
+    <% if (typeof flashError !== 'undefined' && flashError) { %>
+      showToast("<%= flashError %>", 'error');
+    <% } %>
+  </script>
 
 </body>
 </html>

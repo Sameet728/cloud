@@ -36,43 +36,47 @@ bot.on("message", async (msg) => {
   /* =========================
      2️⃣ FILE HANDLING
   ========================= */
-  if (!msg.document && !msg.photo && !msg.video) return;
+   if (!msg.document && !msg.photo && !msg.video) return;
 
-  let fileId, thumbFileId = null, fileType, fileName, mimeType;
+let fileId, thumbFileId = null, fileType, fileName, mimeType, fileSize = 0;
 
-  if (msg.photo) {
-    fileType = "photo";
-    thumbFileId = msg.photo[0].file_id;
-    fileId = msg.photo[msg.photo.length - 1].file_id;
-    fileName = "photo.jpg";
-    mimeType = "image/jpeg";
-  }
+if (msg.photo) {
+  fileType = "photo";
+  thumbFileId = msg.photo[0].file_id;
+  fileId = msg.photo[msg.photo.length - 1].file_id;
+  fileName = "photo.jpg";
+  mimeType = "image/jpeg";
+}
 
-  if (msg.document) {
-    fileType = "document";
-    fileId = msg.document.file_id;
-    fileName = msg.document.file_name;
-    mimeType = msg.document.mime_type;
-  }
+if (msg.document) {
+  fileType = "document";
+  fileId = msg.document.file_id;
+  fileName = msg.document.file_name;
+  mimeType = msg.document.mime_type;
+  fileSize = msg.document.file_size || 0;
+}
 
-  if (msg.video) {
-    fileType = "video";
-    fileId = msg.video.file_id;
-    thumbFileId = msg.video.thumb?.file_id || null;
-    fileName = msg.video.file_name || "video.mp4";
-    mimeType = msg.video.mime_type;
-  }
+if (msg.video) {
+  fileType = "video";
+  fileId = msg.video.file_id;
+  thumbFileId = msg.video.thumb?.file_id || null;
+  fileName = msg.video.file_name || "video.mp4";
+  mimeType = msg.video.mime_type;
+  fileSize = msg.video.file_size || 0;
+}
 
-  await File.create({
-    telegramId,
-    messageId: msg.message_id,
-    fileId,
-    thumbFileId,
-    fileType,
-    fileName,
-    mimeType,
-    date: new Date()
-  });
+await File.create({
+  telegramId: msg.from.id,
+  messageId: msg.message_id,
+  fileId,
+  thumbFileId,
+  fileType,
+  fileName,
+  mimeType,
+  fileSize,
+  date: new Date()
+});
+
 
   bot.sendMessage(msg.chat.id, "✅ File indexed.");
 });

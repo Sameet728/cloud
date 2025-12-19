@@ -1,24 +1,521 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Signup</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signup · CloudSpace</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --primary: #0f172a;
+      --accent: #3b82f6;
+      --accent-soft: #eff6ff;
+      --bg-body: #f8fafc;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+      --success: #16a34a;
+
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-pill: 999px;
+
+      --shadow-card: 0 18px 45px rgba(15, 23, 42, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at top, #e0f2fe, #f8fafc 52%);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .auth-shell {
+      width: 100%;
+      max-width: 960px;
+      background: transparent;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      gap: 28px;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .auth-shell {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+      }
+    }
+
+    /* Left side */
+    .auth-preview {
+      padding: 20px 10px 20px 0;
+    }
+
+    @media (max-width: 768px) {
+      .auth-preview {
+        text-align: center;
+        padding: 0;
+      }
+    }
+
+    .brand-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.92);
+      color: #f9fafb;
+      font-size: 0.8rem;
+      margin-bottom: 14px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.45);
+    }
+
+    .brand-inline-logo {
+      width: 26px;
+      height: 26px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #3b82f6, #22c55e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
+
+    .auth-title {
+      font-size: 2.1rem;
+      letter-spacing: -0.05em;
+      margin: 0 0 10px 0;
+    }
+
+    .auth-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-sub);
+      max-width: 360px;
+    }
+
+    @media (max-width: 768px) {
+      .auth-title {
+        font-size: 1.7rem;
+      }
+      .auth-subtitle {
+        margin: 0 auto;
+      }
+    }
+
+    .little-badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #dbeafe;
+    }
+
+    .pill-badge i {
+      font-size: 0.75rem;
+    }
+
+    /* Right side – form card */
+    .auth-card {
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 24px;
+      padding: 22px 22px 20px 22px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      backdrop-filter: blur(12px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-card::before {
+      content: "";
+      position: absolute;
+      inset: -60%;
+      background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 55%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .auth-card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .auth-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .auth-card-header h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .auth-card-header span {
+      font-size: 0.78rem;
+      color: var(--text-sub);
+    }
+
+    .field-group {
+      margin-bottom: 14px;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 5px;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-wrap i {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    .input-control {
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 9px 12px 9px 30px;
+      font-size: 0.86rem;
+      background: #f9fafb;
+      transition: border-color 0.16s, box-shadow 0.16s, background 0.16s, transform 0.08s;
+    }
+
+    .input-control::placeholder {
+      color: #9ca3af;
+    }
+
+    .input-control:focus {
+      border-color: var(--accent);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+      transform: translateY(-1px);
+    }
+
+    .small-note {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      margin-top: 4px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: var(--radius-pill);
+      font-weight: 600;
+      font-size: 0.85rem;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.08s, box-shadow 0.16s, background 0.16s;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.35);
+      width: 100%;
+      justify-content: center;
+      margin-top: 6px;
+      margin-bottom: 8px;
+    }
+
+    .btn-primary:hover {
+      background: #020617;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-sub);
+      font-size: 0.8rem;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-ghost:hover {
+      background: #f3f4f6;
+      color: var(--text-main);
+    }
+
+    .auth-footer-text {
+      font-size: 0.8rem;
+      text-align: center;
+      margin-top: 6px;
+      color: var(--text-sub);
+    }
+
+    .auth-footer-text a {
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .auth-footer-text a:hover {
+      text-decoration: underline;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.4);
+      font-size: 0.78rem;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 1000;
+      max-width: 260px;
+      color: #e5e7eb;
+    }
+
+    .toast.show {
+      display: inline-flex;
+      animation: toastIn 0.2s ease-out;
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px) translateX(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) translateX(0);
+      }
+    }
+
+    .toast-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toast-success {
+      background: #111827;
+    }
+
+    .toast-success .toast-icon {
+      background: #22c55e1a;
+    }
+
+    .toast-success .toast-icon i {
+      color: #4ade80;
+    }
+
+    .toast-error {
+      background: #7f1d1d;
+    }
+
+    .toast-error .toast-icon {
+      background: #fee2e2;
+    }
+
+    .toast-error .toast-icon i {
+      color: #ef4444;
+    }
+  </style>
 </head>
+
 <body>
+  <div class="auth-shell">
+    <!-- Left side -->
+    <div class="auth-preview">
+      <div class="brand-inline">
+        <div class="brand-inline-logo">
+          <i class="fas fa-cloud"></i>
+        </div>
+        <span>CloudSpace · Create your account</span>
+      </div>
+      <h1 class="auth-title">Join CloudSpace in seconds</h1>
+      <p class="auth-subtitle">
+        Create a free account to start uploading, organizing, and sharing your files securely.
+      </p>
 
-<h2>Signup</h2>
+      <div class="little-badge-row">
+        <span class="pill-badge">
+          <i class="fas fa-shield-halved"></i> Privacy‑first
+        </span>
+        <span class="pill-badge">
+          <i class="fas fa-database"></i> Generous storage
+        </span>
+        <span class="pill-badge">
+          <i class="fas fa-bell"></i> Smart alerts
+        </span>
+      </div>
+    </div>
 
-<form action="/signup" method="POST">
-  <input type="text" name="username" placeholder="Username" required />
-  <br><br>
-  <input type="password" name="password" placeholder="Password" required />
-  <br><br>
-  <input type="email" name="email" placeholder="Email" required />
-  <br><br>
-  
-  <button type="submit">Create Account</button>
-</form>
+    <!-- Right side: form card -->
+    <div class="auth-card">
+      <div class="auth-card-inner">
+        <div class="auth-card-header">
+          <h2>Create account</h2>
+          <span>It takes less than a minute</span>
+        </div>
 
-<p>Already have an account? <a href="/login">Login</a></p>
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div style="margin-bottom:10px; font-size:0.8rem; color:var(--danger); background:#fef2f2; border-radius:999px; padding:6px 10px;">
+            <i class="fas fa-circle-exclamation"></i> <%= error %>
+          </div>
+        <% } %>
 
+        <form action="/signup" method="POST" novalidate>
+          <div class="field-group">
+            <label class="field-label" for="username">Username</label>
+            <div class="input-wrap">
+              <i class="fas fa-user"></i>
+              <input
+                id="username"
+                type="text"
+                name="username"
+                class="input-control"
+                placeholder="Choose a username"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="email">Email</label>
+            <div class="input-wrap">
+              <i class="fas fa-envelope"></i>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                class="input-control"
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="password">Password</label>
+            <div class="input-wrap">
+              <i class="fas fa-lock"></i>
+              <input
+                id="password"
+                type="password"
+                name="password"
+                class="input-control"
+                placeholder="Create a strong password"
+                required
+              />
+            </div>
+            <div class="small-note">
+              Use at least 8 characters with a mix of letters, numbers, and symbols.
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i>
+            Create account
+          </button>
+
+          <button type="button" class="btn btn-ghost" onclick="window.location.href='/login'">
+            <i class="fas fa-arrow-left"></i>
+            Already have an account? Login
+          </button>
+        </form>
+
+        <p class="auth-footer-text">
+          By creating an account, you agree to our
+          <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast toast-success">
+    <div class="toast-icon">
+      <i class="fas fa-check"></i>
+    </div>
+    <div id="toastText"></div>
+  </div>
+
+  <script>
+    const toastEl = document.getElementById('toast');
+    const toastText = document.getElementById('toastText');
+    let toastTimeout = null;
+
+    function showToast(message, type) {
+      toastEl.classList.remove('toast-success', 'toast-error');
+      toastEl.classList.add(type === 'error' ? 'toast-error' : 'toast-success');
+
+      const iconDiv = toastEl.querySelector('.toast-icon');
+      iconDiv.innerHTML = type === 'error'
+        ? '<i class="fas fa-times"></i>'
+        : '<i class="fas fa-check"></i>';
+
+      toastText.textContent = message;
+      toastEl.classList.add('show');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toastEl.classList.remove('show');
+      }, 2600);
+    }
+
+    <% if (typeof flashSuccess !== 'undefined' && flashSuccess) { %>
+      showToast("<%= flashSuccess %>", "success");
+    <% } %>
+    <% if (typeof flashError !== 'undefined' && flashError) { %>
+      showToast("<%= flashError %>", "error");
+    <% } %>
+  </script>
 </body>
 </html>

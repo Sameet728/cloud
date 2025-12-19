@@ -6,6 +6,10 @@ const fileSchema = new mongoose.Schema({
   fileId: String,
   thumbFileId: String,   // 🖼️ thumbnail
   fileType: String,
+  fileSize: {
+    type: Number, // bytes
+    default: 0
+  },
   fileName: String,
   mimeType: String,
   date: Date,
